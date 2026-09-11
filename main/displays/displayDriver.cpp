@@ -777,14 +777,19 @@ lv_obj_t *DisplayDriver::initTDisplayS3(void)
     esp_lcd_panel_swap_xy(panel_handle, true);
 
     Board *board = SYSTEM_MODULE.getBoard();
+#ifdef NERDQAXEPLUS2BIGSCREEN
+    // The 3.5-inch ST7789-compatible panel uses the full 480x320 address window.
+    // Its native mounting orientation differs from the 1.9-inch T-Display S3.
+    esp_lcd_panel_mirror(panel_handle, false, board->isFlipScreenEnabled());
+    esp_lcd_panel_set_gap(panel_handle, 0, 0);
+#else
     if (!board->isFlipScreenEnabled()) {
         esp_lcd_panel_mirror(panel_handle, true, false);
     } else {
         esp_lcd_panel_mirror(panel_handle, false, true);
     }
-
-    // the gap is LCD panel specific, even panels with the same driver IC, can have different gap value
     esp_lcd_panel_set_gap(panel_handle, 0, 35);
+#endif
 
     ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
 
