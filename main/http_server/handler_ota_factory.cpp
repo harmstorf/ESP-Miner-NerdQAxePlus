@@ -19,10 +19,14 @@
 #include "macros.h"
 #include "psram_allocator.h"
 
-#define GITHUB_REPO "https://github.com/shufps/"
-
 #define FW_START 0x10000
+#ifdef NERDQAXEPLUS2BIGSCREEN
+#define GITHUB_REPO "https://github.com/harmstorf/ESP-Miner-NerdQAxePlus/releases/download/"
+#define FW_LEN_MB 5
+#else
+#define GITHUB_REPO "https://github.com/shufps/"
 #define FW_LEN_MB 4
+#endif
 #define FW_LEN_BYTES (FW_LEN_MB * 1024 * 1024)
 
 #define WWW_START 0x410000

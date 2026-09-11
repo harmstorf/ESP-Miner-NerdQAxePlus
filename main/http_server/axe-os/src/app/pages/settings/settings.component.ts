@@ -392,7 +392,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const assetUrl = asset.browser_download_url;
+    const assetUrl = `https://github.com/harmstorf/ESP-Miner-NerdQAxePlus/releases/download/bigscreen-${this.selectedRelease.tag_name}/${filename}`;
 
     this.otpAuth.ensureOtp$(
       "",
