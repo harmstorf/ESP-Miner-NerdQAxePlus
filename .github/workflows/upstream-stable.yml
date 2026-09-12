@@ -1,0 +1,54 @@
+name: Prepare upstream stable update
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: upstream-stable
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: bigscreen
+          fetch-depth: 0
+      - name: Prepare candidate and dispatch build
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag=$(gh api repos/shufps/ESP-Miner-NerdQAxePlus/releases/latest --jq '.tag_name')
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            echo "Unsupported stable tag: $tag" >&2
+            exit 1
+          fi
+          git fetch --no-tags https://github.com/shufps/ESP-Miner-NerdQAxePlus.git "refs/tags/$tag"
+          upstream_sha=$(git rev-parse 'FETCH_HEAD^{commit}')
+          if git merge-base --is-ancestor "$upstream_sha" HEAD; then
+            echo "$tag is already included in bigscreen." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          candidate="upstream-candidate/$tag"
+          if git ls-remote --exit-code --heads origin "$candidate" >/dev/null; then
+            echo "Candidate $candidate already exists; inspect its build before promotion." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$candidate"
+          if ! git merge --no-edit "$upstream_sha"; then
+            git diff --name-only --diff-filter=U >> "$GITHUB_STEP_SUMMARY"
+            echo "Merge conflict: hardware adaptation requires review." >&2
+            exit 1
+          fi
+          git push origin "HEAD:refs/heads/$candidate"
+          gh workflow run bigscreen-build.yml --ref "$candidate"
+          echo "Prepared $candidate from official $tag ($upstream_sha). Build dispatched. Hardware test and explicit promotion required; no miner or release was updated." >> "$GITHUB_STEP_SUMMARY"
