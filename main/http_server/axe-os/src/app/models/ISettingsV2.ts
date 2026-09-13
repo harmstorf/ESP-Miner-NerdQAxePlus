@@ -34,6 +34,7 @@ export interface ISettingsV2 {
     // Device identity
     asicModel: eASICModel;
     deviceModel: string;
+    displayProfile?: string;
     version: string;
     otp: boolean;
     apActive: boolean;

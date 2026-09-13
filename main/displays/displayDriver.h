@@ -19,16 +19,18 @@
 #define PIN_BUTTON_2 (gpio_num_t) 0  // Button 2 GPIO pin
 
 // Display settings
-#ifdef NERDQAXEPLUS2BIGSCREEN
+#if defined(DISPLAY_PROFILE_YYSLUPING_480X320)
+#define TDISPLAYS3_LCD_PROFILE_NAME "YYSLUPING 480x320"
+#define TDISPLAYS3_LCD_PIXEL_CLOCK_HZ (12000000)
 #define TDISPLAYS3_LCD_H_RES 480
 #define TDISPLAYS3_LCD_V_RES 320
-#define TDISPLAYS3_LCD_PIXEL_CLOCK_HZ (TDISPLAYS3_LCD_H_RES * TDISPLAYS3_LCD_V_RES * 80)
-#define LVGL_LCD_BUF_SIZE (TDISPLAYS3_LCD_H_RES * TDISPLAYS3_LCD_V_RES) / 6
+#define LVGL_LCD_BUF_SIZE ((TDISPLAYS3_LCD_H_RES * TDISPLAYS3_LCD_V_RES) / 6)
 #else
-#define TDISPLAYS3_LCD_H_RES 320
-#define TDISPLAYS3_LCD_V_RES 170
-#define TDISPLAYS3_LCD_PIXEL_CLOCK_HZ (6528000)
-#define LVGL_LCD_BUF_SIZE (TDISPLAYS3_LCD_H_RES * TDISPLAYS3_LCD_V_RES) / 4
+#define TDISPLAYS3_LCD_PROFILE_NAME "upstream 320x170"
+#define TDISPLAYS3_LCD_PIXEL_CLOCK_HZ (6528000)                             // Pixel clock for LCD in Hz (60 FPS, 170 x 320 pixels)
+#define TDISPLAYS3_LCD_H_RES 320                                            // Horizontal resolution
+#define TDISPLAYS3_LCD_V_RES 170                                            // Vertical resolution
+#define LVGL_LCD_BUF_SIZE ((TDISPLAYS3_LCD_H_RES * TDISPLAYS3_LCD_V_RES) / 4) // Buffer size for display
 #endif
 #define TDISPLAYS3_LCD_BK_LIGHT_ON_LEVEL 1                                  // Backlight ON level (1: ON, 0: OFF)
 #define TDISPLAYS3_LCD_BK_LIGHT_OFF_LEVEL !TDISPLAYS3_LCD_BK_LIGHT_ON_LEVEL // Backlight OFF level

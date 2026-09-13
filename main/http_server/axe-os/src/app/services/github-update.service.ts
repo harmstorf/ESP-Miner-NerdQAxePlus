@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, EMPTY } from 'rxjs';
+import { Observable, EMPTY, combineLatest } from 'rxjs';
 import { map, switchMap, expand, scan, takeWhile, last } from 'rxjs/operators';
 
 interface GithubAsset {
@@ -127,6 +127,27 @@ export class GithubUpdateService {
         )
       )
     );
+  }
+
+  /**
+   * Keep official version names/changelogs, but offer only explicitly promoted
+   * big-screen bundles. Missing releases and API errors never fall back to stock.
+   * Prerelease artifacts are for manual hardware testing, not one-click OTA.
+   */
+  public getBigScreenReleases(): Observable<GithubRelease[]> {
+    const repo = 'harmstorf/ESP-Miner-NerdQAxePlus';
+    return combineLatest([
+      this.getReleases(false),
+      this.httpClient.get<GithubRelease[]>(`https://api.github.com/repos/${repo}/releases?per_page=100`)
+    ]).pipe(map(([official, patched]) => official.flatMap(release => {
+      const tag = `bigscreen-${release.tag_name}`;
+      const build = patched.find(r => r.tag_name === tag && !r.prerelease);
+      const name = `esp-miner-factory-NerdQAxe++-${release.tag_name}.bin`;
+      const prefix = `https://github.com/${repo}/releases/download/${tag}/`;
+      const asset = build?.assets.find(a =>
+        a.name === name && a.size === 8454144 && a.browser_download_url.startsWith(prefix));
+      return asset ? [{ ...release, assets: [asset] }] : [];
+    })));
   }
 
   /**

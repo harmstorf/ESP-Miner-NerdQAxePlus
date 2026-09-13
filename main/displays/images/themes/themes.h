@@ -98,15 +98,6 @@ LV_IMG_DECLARE(ui_img_NerdQaxePlus2_settingsscreen_png);
 LV_IMG_DECLARE(ui_img_NerdQaxePlus2_splashscreen2_png);
 LV_IMG_DECLARE(ui_img_NerdQaxePlus2_globalStats_png);
 
-// image files for the 480x320 NerdQAxe++ theme
-LV_IMG_DECLARE(ui_img_NerdQaxePlus2Bigscreen_initscreen2_png);
-LV_IMG_DECLARE(ui_img_NerdQaxePlus2Bigscreen_miningscreen2_png);
-LV_IMG_DECLARE(ui_img_NerdQaxePlus2Bigscreen_portalscreen_png);
-LV_IMG_DECLARE(ui_img_NerdQaxePlus2Bigscreen_btcscreen_png);
-LV_IMG_DECLARE(ui_img_NerdQaxePlus2Bigscreen_settingsscreen_png);
-LV_IMG_DECLARE(ui_img_NerdQaxePlus2Bigscreen_splashscreen2_png);
-LV_IMG_DECLARE(ui_img_NerdQaxePlus2Bigscreen_globalStats_png);
-
 // image files for theme NerdAxe
 LV_IMG_DECLARE(ui_img_NerdAxe_initscreen2_png);
 LV_IMG_DECLARE(ui_img_NerdAxe_miningscreen2_png);
@@ -215,19 +206,6 @@ public:
         setSettingsscreen(&ui_img_NerdQaxePlus2_settingsscreen_png);
         setSplashscreen2(&ui_img_NerdQaxePlus2_splashscreen2_png);
         setGlobalstats(&ui_img_NerdQaxePlus2_globalStats_png);
-    }
-};
-
-class ThemeNerdqaxeplus2bigscreen : public Theme {
-public:
-    ThemeNerdqaxeplus2bigscreen() {
-        setInitscreen2(&ui_img_NerdQaxePlus2Bigscreen_initscreen2_png);
-        setMiningscreen2(&ui_img_NerdQaxePlus2Bigscreen_miningscreen2_png);
-        setPortalscreen(&ui_img_NerdQaxePlus2Bigscreen_portalscreen_png);
-        setBtcscreen(&ui_img_NerdQaxePlus2Bigscreen_btcscreen_png);
-        setSettingsscreen(&ui_img_NerdQaxePlus2Bigscreen_settingsscreen_png);
-        setSplashscreen2(&ui_img_NerdQaxePlus2Bigscreen_splashscreen2_png);
-        setGlobalstats(&ui_img_NerdQaxePlus2Bigscreen_globalStats_png);
     }
 };
 

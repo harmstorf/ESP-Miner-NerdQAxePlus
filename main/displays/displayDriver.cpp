@@ -54,6 +54,14 @@ static void formatHashrate(char *buf, int len, float hashrate) {
     }
 }
 
+static void formatPower(char *buf, int len, float power) {
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    snprintf(buf, len, "%.0fW", power);
+#else
+    snprintf(buf, len, "%.3fW", power);
+#endif
+}
+
 DisplayDriver::DisplayDriver() {
     m_animationsEnabled = false;
     m_lastKeypressTime = 0;
@@ -700,6 +708,7 @@ lv_obj_t *DisplayDriver::initTDisplayS3(void)
 {
     static lv_disp_draw_buf_t disp_buf; // contains internal graphic buffer(s) called draw buffer(s)
     static lv_disp_drv_t disp_drv;      // contains callback functions
+    ESP_LOGI(TAG, "Display profile: %s", TDISPLAYS3_LCD_PROFILE_NAME);
     // GPIO configuration
     ESP_LOGI(TAG, "Turn off LCD backlight");
     gpio_config_t bk_gpio_config = {.pin_bit_mask = 1ULL << TDISPLAYS3_PIN_NUM_BK_LIGHT, .mode = GPIO_MODE_OUTPUT};
@@ -764,7 +773,11 @@ lv_obj_t *DisplayDriver::initTDisplayS3(void)
 
     esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = TDISPLAYS3_PIN_NUM_RST,
+#if defined(DISPLAY_PROFILE_YYSLUPING_480X320)
+        .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_BGR,
+#else
         .rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB,
+#endif
         .bits_per_pixel = 16,
     };
 
@@ -776,18 +789,18 @@ lv_obj_t *DisplayDriver::initTDisplayS3(void)
 
     esp_lcd_panel_swap_xy(panel_handle, true);
 
-    Board *board = SYSTEM_MODULE.getBoard();
-#ifdef NERDQAXEPLUS2BIGSCREEN
-    // The 3.5-inch ST7789-compatible panel uses the full 480x320 address window.
-    // Its native mounting orientation differs from the 1.9-inch T-Display S3.
-    esp_lcd_panel_mirror(panel_handle, false, board->isFlipScreenEnabled());
+#if defined(DISPLAY_PROFILE_YYSLUPING_480X320)
+    esp_lcd_panel_mirror(panel_handle, false, false);
     esp_lcd_panel_set_gap(panel_handle, 0, 0);
 #else
+    Board *board = SYSTEM_MODULE.getBoard();
     if (!board->isFlipScreenEnabled()) {
         esp_lcd_panel_mirror(panel_handle, true, false);
     } else {
         esp_lcd_panel_mirror(panel_handle, false, true);
     }
+
+    // the gap is LCD panel specific, even panels with the same driver IC, can have different gap value
     esp_lcd_panel_set_gap(panel_handle, 0, 35);
 #endif
 
@@ -862,7 +875,7 @@ void DisplayDriver::updateHashrate(System *module, StratumManager* manager, floa
     snprintf(strData, sizeof(strData), "%.1f", efficiency);
     lv_label_set_text(m_ui->ui_lbEficiency, (efficiency < 10000.0f) ? strData : "n/a"); // Update eficiency label
 
-    snprintf(strData, sizeof(strData), "%.3fW", power);
+    formatPower(strData, sizeof(strData), power);
     lv_label_set_text(m_ui->ui_lbPower, strData); // Actualiza el label
 }
 
@@ -1016,7 +1029,7 @@ void DisplayDriver::updateGlobalState(int pool)
     snprintf(strData, sizeof(strData), "%d", POWER_MANAGEMENT_MODULE.getFanRPM(0));
     lv_label_set_text(m_ui->ui_lbRPM, strData); // Update label
 
-    snprintf(strData, sizeof(strData), "%.3fW", POWER_MANAGEMENT_MODULE.getPower());
+    formatPower(strData, sizeof(strData), POWER_MANAGEMENT_MODULE.getPower());
     lv_label_set_text(m_ui->ui_lbPower, strData); // Update label
 
     snprintf(strData, sizeof(strData), "%imA", (int) POWER_MANAGEMENT_MODULE.getCurrent());

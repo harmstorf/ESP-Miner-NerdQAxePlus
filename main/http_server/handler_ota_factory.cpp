@@ -20,7 +20,7 @@
 #include "psram_allocator.h"
 
 #define FW_START 0x10000
-#ifdef NERDQAXEPLUS2BIGSCREEN
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
 #define GITHUB_REPO "https://github.com/harmstorf/ESP-Miner-NerdQAxePlus/releases/download/"
 #define FW_LEN_MB 5
 #else
@@ -190,7 +190,12 @@ esp_err_t FactoryOTAUpdate::do_www_update(uint8_t *data)
 
     // Erase the entire www partition before writing
     ESP_LOGI(TAG, "erasing www partition ...");
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    esp_err_t erase_err = esp_partition_erase_range(www_partition, 0, www_partition->size);
+    if (erase_err != ESP_OK) return erase_err;
+#else
     ESP_ERROR_CHECK(esp_partition_erase_range(www_partition, 0, www_partition->size));
+#endif
     ESP_LOGI(TAG, "erasing done");
 
     for (uint32_t offset = 0; offset < to_write; offset += CHUNK_SIZE) {
@@ -204,6 +209,13 @@ esp_err_t FactoryOTAUpdate::do_www_update(uint8_t *data)
         if (esp_partition_write(www_partition, offset, (const void *) buf, CHUNK_SIZE) != ESP_OK) {
             return ESP_FAIL;
         }
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+        if (esp_partition_read(www_partition, offset, buf, CHUNK_SIZE) != ESP_OK ||
+            memcmp(buf, &data[offset], CHUNK_SIZE) != 0) {
+            ESP_LOGE(TAG, "WWW read-back verification failed at %lu", (unsigned long) offset);
+            return ESP_FAIL;
+        }
+#endif
         addWwwBytes(CHUNK_SIZE);
     }
     return ESP_OK;
@@ -223,7 +235,15 @@ esp_err_t FactoryOTAUpdate::do_firmware_update(esp_http_client_handle_t client)
 
     esp_ota_handle_t ota_handle;
     const esp_partition_t *ota_partition = esp_ota_get_next_update_partition(NULL);
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    if (!ota_partition || ota_partition->size != FW_LEN_BYTES) {
+        return ESP_ERR_INVALID_SIZE;
+    }
+    esp_err_t begin_err = esp_ota_begin(ota_partition, OTA_SIZE_UNKNOWN, &ota_handle);
+    if (begin_err != ESP_OK) return begin_err;
+#else
     ESP_ERROR_CHECK(esp_ota_begin(ota_partition, OTA_SIZE_UNKNOWN, &ota_handle));
+#endif
 
     for (uint32_t offset = 0; offset < FW_LEN_BYTES; offset += CHUNK_SIZE) {
         esp_err_t err = http_read_chunk(client, buf);
@@ -245,8 +265,13 @@ esp_err_t FactoryOTAUpdate::do_firmware_update(esp_http_client_handle_t client)
         addFwBytes(CHUNK_SIZE);
     }
 
+    // Big-screen builds select the new boot slot only after WWW is verified.
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    if (esp_ota_end(ota_handle) != ESP_OK) {
+#else
     // Validate and switch to new OTA image and reboot later
     if (esp_ota_end(ota_handle) != ESP_OK || esp_ota_set_boot_partition(ota_partition) != ESP_OK) {
+#endif
         return ESP_FAIL;
     }
 
@@ -366,6 +391,9 @@ esp_err_t FactoryOTAUpdate::ota_update_from_factory(const char *start_url, bool 
 
         setStep(OtaStep::UPDATING_FW, "OTA: updating firmware");
 
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+        const esp_partition_t *pending_partition = esp_ota_get_next_update_partition(NULL);
+#endif
         err = do_firmware_update(client);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "firmware update failed");
@@ -397,12 +425,19 @@ esp_err_t FactoryOTAUpdate::ota_update_from_factory(const char *start_url, bool 
         err = do_www_update(wwwData);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "www update failed");
-            // Firmware already switched; ensure deterministic state by rebooting
+            // Reboot on failure. Big-screen builds retain their old boot slot.
             POWER_MANAGEMENT_MODULE.restart();
             return err;
         }
         ESP_LOGI(TAG, "www update successful!");
 
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+        if (!pending_partition || esp_ota_set_boot_partition(pending_partition) != ESP_OK) {
+            setStep(OtaStep::ERROR, "OTA: could not select verified firmware");
+            POWER_MANAGEMENT_MODULE.restart();
+            return ESP_FAIL;
+        }
+#endif
         if (!keep_config) {
             setStep(OtaStep::ERASING_NVS, "OTA: erasing NVS (reset to factory defaults)");
             if (erase_nvs_partition() != ESP_OK) {

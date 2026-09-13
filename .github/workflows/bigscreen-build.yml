@@ -20,14 +20,21 @@ jobs:
 
       - name: Build 480x320 firmware
         run: |
-          cp partitions-bigscreen.csv partitions.csv
-          sed -i 's/CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y/CONFIG_ESPTOOLPY_FLASHSIZE_32MB=y/' sdkconfig.defaults
-          sed -i 's/CONFIG_ESPTOOLPY_FLASHSIZE="16MB"/CONFIG_ESPTOOLPY_FLASHSIZE="32MB"/' sdkconfig.defaults
+          set -euo pipefail
+          BASE_VERSION="$(tr -d '\n' < UPSTREAM_VERSION)"
+          [[ "$BASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]
+          COMMIT_HASH="$(git rev-parse --short=8 HEAD)"
+          echo "${BASE_VERSION}-bigscreen-${COMMIT_HASH}" > version.txt
+          sed -i "s|__VERSION__|${BASE_VERSION}-bigscreen|g; s|__COMMIT__|${COMMIT_HASH}|g" main/http_server/axe-os/src/app/app.module.ts
+          for file in main/http_server/axe-os/src/assets/i18n/*.json; do
+            mv "$file" "${file%.json}.${COMMIT_HASH}.json"
+          done
           docker run --rm --user root \
-            -e BOARD=NERDQAXEPLUS2BIGSCREEN \
+            -e BOARD=NERDQAXEPLUS2 \
+            -e DISPLAY_PROFILE=YYSLUPING_480X320 \
             -v "$PWD:/home/builder/project" \
             shufps/esp-idf-builder:0.0.1 \
-            idf.py set-target esp32s3 build
+            idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.yysluping.defaults" set-target esp32s3 build
 
       - name: Verify OTA image fits its 5 MiB slot
         run: |
@@ -35,7 +42,7 @@ jobs:
 
       - name: Create 32 MiB factory image
         run: |
-          BASE_VERSION="$(git describe --tags --abbrev=0)"
+          BASE_VERSION="$(tr -d '\n' < UPSTREAM_VERSION)"
           docker run --rm --user root \
             -v "$PWD:/home/builder/project" \
             shufps/esp-idf-builder:0.0.1 \
@@ -63,6 +70,7 @@ jobs:
 
       - name: Record checksums and sizes
         run: |
+          python3 test/verify_bigscreen_artifacts.py --version "$(tr -d '\n' < UPSTREAM_VERSION)" > BUILD_INFO.json
           cp build/esp-miner.bin esp-miner-NerdQAxe++-BigScreen.bin
           cp build/www.bin www.bin
           sha256sum esp-miner-*.bin www.bin > SHA256SUMS
@@ -77,4 +85,5 @@ jobs:
             esp-miner-NerdQAxe++-BigScreen.bin
             www.bin
             SHA256SUMS
+            BUILD_INFO.json
           retention-days: 14

@@ -16,23 +16,235 @@ UI::UI() {
 
 static const char *TAG="ui";
 
-static inline lv_coord_t scale_x(lv_coord_t value)
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+namespace {
+
+constexpr uint32_t BIG_BG = 0x0E1113;
+constexpr uint32_t BIG_HEADER = 0x181E22;
+constexpr uint32_t BIG_PANEL = 0x1E2529;
+constexpr uint32_t BIG_PANEL_ALT = 0x252E33;
+constexpr uint32_t BIG_TEXT = 0xF4F7F8;
+constexpr uint32_t BIG_MUTED = 0xA8B3B9;
+constexpr uint32_t BIG_GREEN = 0x58D68D;
+constexpr uint32_t BIG_ORANGE = 0xF7931A;
+constexpr uint32_t BIG_CYAN = 0x54C7EC;
+
+void bigScreenBase(lv_obj_t *screen)
 {
-#ifdef NERDQAXEPLUS2BIGSCREEN
-    return value * 480 / 320;
-#else
-    return value;
-#endif
+    lv_obj_set_style_bg_color(screen, lv_color_hex(BIG_BG), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(screen, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_all(screen, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_clear_flag(screen, LV_OBJ_FLAG_SCROLLABLE);
 }
 
-static inline lv_coord_t scale_y(lv_coord_t value)
+lv_obj_t *bigPanel(lv_obj_t *screen, int x, int y, int width, int height, uint32_t color)
 {
-#ifdef NERDQAXEPLUS2BIGSCREEN
-    return value * 320 / 170;
-#else
-    return value;
-#endif
+    lv_obj_t *panel = lv_obj_create(screen);
+    lv_obj_set_pos(panel, x, y);
+    lv_obj_set_size(panel, width, height);
+    lv_obj_set_style_bg_color(panel, lv_color_hex(color), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(panel, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_width(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_radius(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_all(panel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_clear_flag(panel, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_move_background(panel);
+    return panel;
 }
+
+lv_obj_t *bigText(lv_obj_t *parent, const char *text, int x, int y, int width,
+                  const lv_font_t *font, uint32_t color, lv_text_align_t align = LV_TEXT_ALIGN_LEFT)
+{
+    lv_obj_t *label = lv_label_create(parent);
+    lv_label_set_text(label, text);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_CLIP);
+    lv_obj_set_pos(label, x, y);
+    lv_obj_set_size(label, width, LV_SIZE_CONTENT);
+    lv_obj_set_style_text_font(label, font, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(label, lv_color_hex(color), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(label, align, LV_PART_MAIN | LV_STATE_DEFAULT);
+    return label;
+}
+
+void bigValue(lv_obj_t *label, int x, int y, int width, const lv_font_t *font,
+              uint32_t color, lv_text_align_t align = LV_TEXT_ALIGN_LEFT)
+{
+    lv_obj_set_align(label, LV_ALIGN_TOP_LEFT);
+    lv_obj_set_pos(label, x, y);
+    lv_obj_set_size(label, width, LV_SIZE_CONTENT);
+    lv_label_set_long_mode(label, LV_LABEL_LONG_CLIP);
+    lv_obj_set_style_text_font(label, font, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_color(label, lv_color_hex(color), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(label, align, LV_PART_MAIN | LV_STATE_DEFAULT);
+}
+
+void bigRemoveLegacyImage(lv_obj_t *&image)
+{
+    if (image != nullptr) {
+        lv_obj_del(image);
+        image = nullptr;
+    }
+}
+
+} // namespace
+
+void UI::applyBigScreenSplashLayout(lv_obj_t *screen, lv_obj_t *image)
+{
+    bigScreenBase(screen);
+    lv_img_set_zoom(image, 384);
+    lv_img_set_antialias(image, true);
+    lv_obj_align(image, LV_ALIGN_CENTER, 0, 0);
+}
+
+void UI::applyBigScreenPortalLayout()
+{
+    bigScreenBase(ui_PortalScreen);
+    bigRemoveLegacyImage(ui_Image1);
+
+    lv_obj_t *header = bigPanel(ui_PortalScreen, 0, 0, 480, 58, BIG_HEADER);
+    bigText(header, "NERDQAXE++", 18, 14, 220, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigText(header, "SETUP MODE", 300, 18, 160, &ui_font_OpenSansBold14, BIG_CYAN, LV_TEXT_ALIGN_RIGHT);
+
+    lv_obj_t *body = bigPanel(ui_PortalScreen, 0, 58, 480, 262, BIG_PANEL);
+    bigText(body, "CONNECT TO WI-FI", 28, 40, 424, &ui_font_OpenSansBold14, BIG_MUTED, LV_TEXT_ALIGN_CENTER);
+    bigText(body, "Network", 28, 91, 424, &ui_font_OpenSansBold13, BIG_MUTED, LV_TEXT_ALIGN_CENTER);
+    bigText(body, "Open 192.168.4.1 after connecting", 28, 174, 424,
+            &ui_font_OpenSansBold14, BIG_TEXT, LV_TEXT_ALIGN_CENTER);
+
+    bigValue(ui_lbSSID, 30, 166, 420, &ui_font_OpenSansBold24, BIG_GREEN, LV_TEXT_ALIGN_CENTER);
+}
+
+void UI::applyBigScreenMiningLayout()
+{
+    bigScreenBase(ui_MiningScreen);
+    bigRemoveLegacyImage(ui_Image2);
+
+    lv_obj_t *header = bigPanel(ui_MiningScreen, 0, 0, 480, 52, BIG_HEADER);
+    bigText(header, "NERDQAXE++", 16, 12, 190, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigText(header, "ASIC", 210, 18, 48, &ui_font_OpenSansBold13, BIG_MUTED);
+
+    lv_obj_t *hashPanel = bigPanel(ui_MiningScreen, 0, 52, 306, 158, BIG_BG);
+    bigText(hashPanel, "HASHRATE", 18, 16, 160, &ui_font_OpenSansBold14, BIG_MUTED);
+    bigText(hashPanel, "UPTIME", 18, 112, 80, &ui_font_OpenSansBold13, BIG_MUTED);
+
+    lv_obj_t *telemetry = bigPanel(ui_MiningScreen, 306, 52, 174, 158, BIG_PANEL_ALT);
+    bigText(telemetry, "TEMP C", 14, 15, 74, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(telemetry, "FAN RPM", 14, 48, 74, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(telemetry, "POWER", 14, 81, 74, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(telemetry, "BEST DIFF", 14, 114, 82, &ui_font_OpenSansBold13, BIG_MUTED);
+
+    lv_obj_t *electrical = bigPanel(ui_MiningScreen, 0, 210, 480, 110, BIG_PANEL);
+    bigText(electrical, "INPUT", 16, 18, 96, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(electrical, "VCORE", 136, 18, 96, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(electrical, "CURRENT", 256, 18, 96, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(electrical, "EFF. J/TH", 376, 18, 94, &ui_font_OpenSansBold13, BIG_MUTED);
+
+    bigValue(ui_lbASIC, 260, 15, 92, &ui_font_OpenSansBold14, BIG_GREEN);
+    bigValue(ui_lbIP, 350, 17, 114, &lv_font_montserrat_14, BIG_CYAN, LV_TEXT_ALIGN_RIGHT);
+    bigValue(ui_lbHashrate, 18, 84, 274, &ui_font_OpenSansBold45, BIG_TEXT);
+    bigValue(ui_lbTime, 18, 178, 270, &ui_font_OpenSansBold14, BIG_GREEN);
+    bigValue(ui_lbTemp, 398, 65, 66, &ui_font_OpenSansBold24, BIG_TEXT, LV_TEXT_ALIGN_RIGHT);
+    bigValue(ui_lbRPM, 388, 98, 76, &ui_font_OpenSansBold24, BIG_TEXT, LV_TEXT_ALIGN_RIGHT);
+    bigValue(ui_lbPower, 380, 131, 84, &ui_font_OpenSansBold24, BIG_ORANGE, LV_TEXT_ALIGN_RIGHT);
+    bigValue(ui_lbBestDifficulty, 382, 164, 82, &ui_font_OpenSansBold24, BIG_TEXT, LV_TEXT_ALIGN_RIGHT);
+    bigValue(ui_lbVinput, 16, 254, 104, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigValue(ui_lbVcore, 136, 254, 104, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigValue(ui_lbIntensidad, 256, 254, 104, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigValue(ui_lbEficiency, 376, 254, 88, &ui_font_OpenSansBold24, BIG_GREEN);
+}
+
+void UI::applyBigScreenSettingsLayout()
+{
+    bigScreenBase(ui_SettingsScreen);
+    bigRemoveLegacyImage(ui_Image4);
+
+    lv_obj_t *header = bigPanel(ui_SettingsScreen, 0, 0, 480, 52, BIG_HEADER);
+    bigText(header, "MINER SETTINGS", 16, 12, 230, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigText(header, "IP", 282, 18, 34, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(header, "POOL", 404, 18, 44, &ui_font_OpenSansBold13, BIG_MUTED);
+
+    lv_obj_t *tuning = bigPanel(ui_SettingsScreen, 0, 52, 240, 175, BIG_PANEL);
+    bigText(tuning, "CORE VOLTAGE mV", 18, 15, 204, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(tuning, "FREQUENCY MHz", 18, 70, 204, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(tuning, "FAN MODE / PERCENT", 18, 125, 204, &ui_font_OpenSansBold13, BIG_MUTED);
+
+    lv_obj_t *pool = bigPanel(ui_SettingsScreen, 240, 52, 240, 175, BIG_PANEL_ALT);
+    bigText(pool, "POOL HOST", 18, 15, 204, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(pool, "PORT", 18, 91, 204, &ui_font_OpenSansBold13, BIG_MUTED);
+
+    lv_obj_t *status = bigPanel(ui_SettingsScreen, 0, 227, 480, 93, BIG_BG);
+    bigText(status, "HASHRATE", 18, 13, 138, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(status, "BEST DIFF", 176, 13, 128, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(status, "SHARES A/R", 334, 13, 128, &ui_font_OpenSansBold13, BIG_MUTED);
+
+    bigValue(ui_lbIPSet, 316, 17, 82, &lv_font_montserrat_14, BIG_CYAN, LV_TEXT_ALIGN_RIGHT);
+    bigValue(ui_lbPoolNr, 448, 15, 20, &ui_font_OpenSansBold14, BIG_GREEN, LV_TEXT_ALIGN_RIGHT);
+    bigValue(ui_lbVcoreSet, 18, 86, 204, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigValue(ui_lbFreqSet, 18, 141, 204, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigValue(ui_lbFanSet, 18, 196, 204, &ui_font_OpenSansBold24, BIG_GREEN);
+    bigValue(ui_lbPoolSet, 258, 86, 204, &ui_font_OpenSansBold24, BIG_TEXT);
+    lv_label_set_long_mode(ui_lbPoolSet, LV_LABEL_LONG_DOT);
+    bigValue(ui_lbPortSet, 258, 162, 204, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigValue(ui_lbHashrateSet, 18, 263, 138, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigValue(ui_lbBestDifficultySet, 176, 263, 128, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigValue(ui_lbShares, 334, 263, 128, &ui_font_OpenSansBold24, BIG_GREEN);
+}
+
+void UI::applyBigScreenBTCLayout()
+{
+    bigScreenBase(ui_BTCScreen);
+    bigRemoveLegacyImage(ui_ImgBTCscreen);
+
+    lv_obj_t *header = bigPanel(ui_BTCScreen, 0, 0, 480, 52, BIG_HEADER);
+    bigText(header, "BITCOIN MARKET", 16, 12, 260, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigText(header, "BTC / USD", 336, 18, 128, &ui_font_OpenSansBold14, BIG_ORANGE, LV_TEXT_ALIGN_RIGHT);
+
+    lv_obj_t *price = bigPanel(ui_BTCScreen, 0, 52, 480, 168, BIG_BG);
+    bigText(price, "CURRENT PRICE", 20, 26, 440, &ui_font_OpenSansBold14, BIG_MUTED, LV_TEXT_ALIGN_CENTER);
+
+    lv_obj_t *miner = bigPanel(ui_BTCScreen, 0, 220, 240, 100, BIG_PANEL);
+    bigText(miner, "MINER HASHRATE", 18, 17, 204, &ui_font_OpenSansBold13, BIG_MUTED, LV_TEXT_ALIGN_CENTER);
+    lv_obj_t *thermal = bigPanel(ui_BTCScreen, 240, 220, 240, 100, BIG_PANEL_ALT);
+    bigText(thermal, "CHIP TEMP C", 18, 17, 204, &ui_font_OpenSansBold13, BIG_MUTED, LV_TEXT_ALIGN_CENTER);
+
+    bigValue(ui_lblBTCPrice, 20, 112, 440, &ui_font_OpenSansBold45, BIG_ORANGE, LV_TEXT_ALIGN_CENTER);
+    bigValue(ui_lblHashPrice, 18, 263, 204, &ui_font_OpenSansBold24, BIG_TEXT, LV_TEXT_ALIGN_CENTER);
+    bigValue(ui_lblTempPrice, 258, 263, 204, &ui_font_OpenSansBold24, BIG_GREEN, LV_TEXT_ALIGN_CENTER);
+}
+
+void UI::applyBigScreenGlobalStatsLayout()
+{
+    bigScreenBase(ui_GlobalStats);
+    bigRemoveLegacyImage(ui_Image5);
+
+    lv_obj_t *header = bigPanel(ui_GlobalStats, 0, 0, 480, 52, BIG_HEADER);
+    bigText(header, "BITCOIN NETWORK", 16, 12, 280, &ui_font_OpenSansBold24, BIG_TEXT);
+
+    lv_obj_t *fees = bigPanel(ui_GlobalStats, 0, 52, 480, 66, BIG_PANEL_ALT);
+    bigText(fees, "FEES SAT/VB", 16, 9, 110, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(fees, "LOW", 158, 9, 76, &ui_font_OpenSansBold13, BIG_MUTED, LV_TEXT_ALIGN_CENTER);
+    bigText(fees, "MED", 272, 9, 76, &ui_font_OpenSansBold13, BIG_MUTED, LV_TEXT_ALIGN_CENTER);
+    bigText(fees, "HIGH", 386, 9, 76, &ui_font_OpenSansBold13, BIG_MUTED, LV_TEXT_ALIGN_CENTER);
+
+    lv_obj_t *network = bigPanel(ui_GlobalStats, 0, 118, 480, 94, BIG_PANEL);
+    bigText(network, "DIFFICULTY", 18, 14, 204, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(network, "NETWORK HASH EH/S", 258, 14, 204, &ui_font_OpenSansBold13, BIG_MUTED);
+
+    lv_obj_t *chain = bigPanel(ui_GlobalStats, 0, 212, 480, 108, BIG_BG);
+    bigText(chain, "BLOCK", 18, 14, 130, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(chain, "HALVING", 174, 14, 130, &ui_font_OpenSansBold13, BIG_MUTED);
+    bigText(chain, "BLOCKS LEFT", 330, 14, 132, &ui_font_OpenSansBold13, BIG_MUTED);
+
+    bigValue(ui_lbllowFee, 158, 81, 76, &ui_font_OpenSansBold24, BIG_GREEN, LV_TEXT_ALIGN_CENTER);
+    bigValue(ui_lblmedFee, 272, 81, 76, &ui_font_OpenSansBold24, BIG_ORANGE, LV_TEXT_ALIGN_CENTER);
+    bigValue(ui_lblhighFee, 386, 81, 76, &ui_font_OpenSansBold24, BIG_TEXT, LV_TEXT_ALIGN_CENTER);
+    bigValue(ui_lblDifficulty, 18, 154, 204, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigValue(ui_lblGlobalHash, 258, 154, 204, &ui_font_OpenSansBold24, BIG_CYAN);
+    bigValue(ui_lblBlock, 18, 259, 130, &ui_font_OpenSansBold24, BIG_TEXT);
+    bigValue(ui_lblHalvingPercent, 174, 259, 130, &ui_font_OpenSansBold24, BIG_ORANGE);
+    bigValue(ui_lblBlocksToHalving, 330, 259, 132, &ui_font_OpenSansBold24, BIG_TEXT);
+}
+#endif
 
 ///////////////////// FUNCTIONS ////////////////////
 
@@ -84,6 +296,9 @@ void UI::splash1ScreenInit(void)
     lv_img_cache_invalidate_src(m_theme->getSplashscreen2());
 
     addInitScreenOverlays();
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    applyBigScreenSplashLayout(ui_Splash1, ui_imgSplash1);
+#endif
 }
 
 void UI::splash2ScreenInit(void)
@@ -102,8 +317,8 @@ void UI::splash2ScreenInit(void)
     ui_lbConnect = lv_label_create(ui_Splash2);
     lv_obj_set_width(ui_lbConnect, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbConnect, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbConnect, scale_x(-31));
-    lv_obj_set_y(ui_lbConnect, scale_y(-40));
+    lv_obj_set_x(ui_lbConnect, -31);
+    lv_obj_set_y(ui_lbConnect, -40);
     lv_obj_set_align(ui_lbConnect, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(ui_lbConnect, "Connecting...");
     lv_obj_set_style_text_color(ui_lbConnect, lv_color_hex(0xDEDADE), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -117,6 +332,10 @@ void UI::splash2ScreenInit(void)
     lv_img_cache_invalidate_src(m_theme->getInitscreen2());
 
     addSplash2Overlays();
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    applyBigScreenSplashLayout(ui_Splash2, ui_Image1);
+    bigValue(ui_lbConnect, 268, 84, 184, &ui_font_OpenSansBold24, BIG_TEXT, LV_TEXT_ALIGN_RIGHT);
+#endif
 }
 
 bool UI::isGenericTheme() const
@@ -242,8 +461,8 @@ void UI::portalScreenInit(void)
     ui_lbSSID = lv_label_create(ui_PortalScreen);
     lv_obj_set_width(ui_lbSSID, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbSSID, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbSSID, scale_x(75));
-    lv_obj_set_y(ui_lbSSID, scale_y(52));
+    lv_obj_set_x(ui_lbSSID, 75);
+    lv_obj_set_y(ui_lbSSID, 52);
     lv_obj_set_align(ui_lbSSID, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lbSSID, "NERDAXE_XXXX");
     lv_obj_set_style_text_color(ui_lbSSID, lv_color_hex(0xDEDADE), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -256,6 +475,10 @@ void UI::portalScreenInit(void)
 
     // Liberar memoria de imágenes no utilizadas
     lv_img_cache_invalidate_src(m_theme->getInitscreen2());
+
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    applyBigScreenPortalLayout();
+#endif
 }
 
 void UI::miningScreenInit(void)
@@ -274,8 +497,8 @@ void UI::miningScreenInit(void)
     ui_lbVinput = lv_label_create(ui_MiningScreen);
     lv_obj_set_width(ui_lbVinput, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbVinput, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbVinput, scale_x(234));
-    lv_obj_set_y(ui_lbVinput, scale_y(-34));
+    lv_obj_set_x(ui_lbVinput, 234);
+    lv_obj_set_y(ui_lbVinput, -34);
     lv_obj_set_align(ui_lbVinput, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lbVinput, "0V");
     lv_obj_set_style_text_color(ui_lbVinput, lv_color_hex(0xDEDADE), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -286,8 +509,8 @@ void UI::miningScreenInit(void)
     ui_lbVcore = lv_label_create(ui_MiningScreen);
     lv_obj_set_width(ui_lbVcore, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbVcore, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbVcore, scale_x(234));
-    lv_obj_set_y(ui_lbVcore, scale_y(-12));
+    lv_obj_set_x(ui_lbVcore, 234);
+    lv_obj_set_y(ui_lbVcore, -12);
     lv_obj_set_align(ui_lbVcore, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lbVcore, "0mV");
     lv_obj_set_style_text_color(ui_lbVcore, lv_color_hex(0xDEDEDE), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -298,8 +521,8 @@ void UI::miningScreenInit(void)
     ui_lbIntensidad = lv_label_create(ui_MiningScreen);
     lv_obj_set_width(ui_lbIntensidad, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbIntensidad, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbIntensidad, scale_x(234));
-    lv_obj_set_y(ui_lbIntensidad, scale_y(10));
+    lv_obj_set_x(ui_lbIntensidad, 234);
+    lv_obj_set_y(ui_lbIntensidad, 10);
     lv_obj_set_align(ui_lbIntensidad, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lbIntensidad, "0.000mA");
     lv_obj_set_style_text_color(ui_lbIntensidad, lv_color_hex(0xDEDEDE), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -310,8 +533,8 @@ void UI::miningScreenInit(void)
     ui_lbPower = lv_label_create(ui_MiningScreen);
     lv_obj_set_width(ui_lbPower, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbPower, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbPower, scale_x(234));
-    lv_obj_set_y(ui_lbPower, scale_y(32));
+    lv_obj_set_x(ui_lbPower, 234);
+    lv_obj_set_y(ui_lbPower, 32);
     lv_obj_set_align(ui_lbPower, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lbPower, "0W");
     lv_obj_set_style_text_color(ui_lbPower, lv_color_hex(0xDEDEDE), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -322,8 +545,8 @@ void UI::miningScreenInit(void)
     ui_lbEficiency = lv_label_create(ui_MiningScreen);
     lv_obj_set_width(ui_lbEficiency, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbEficiency, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbEficiency, scale_x(-43));
-    lv_obj_set_y(ui_lbEficiency, scale_y(61));
+    lv_obj_set_x(ui_lbEficiency, -43);
+    lv_obj_set_y(ui_lbEficiency, 61);
     lv_obj_set_align(ui_lbEficiency, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(ui_lbEficiency, "0.0");
     lv_obj_set_style_text_color(ui_lbEficiency, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -334,8 +557,8 @@ void UI::miningScreenInit(void)
     ui_lbTemp = lv_label_create(ui_MiningScreen);
     lv_obj_set_width(ui_lbTemp, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbTemp, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbTemp, scale_x(-139));
-    lv_obj_set_y(ui_lbTemp, scale_y(24));
+    lv_obj_set_x(ui_lbTemp, -139);
+    lv_obj_set_y(ui_lbTemp, 24);
     lv_obj_set_align(ui_lbTemp, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(ui_lbTemp, "20");
     lv_obj_set_style_text_color(ui_lbTemp, lv_color_hex(0xDEDADE), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -346,8 +569,8 @@ void UI::miningScreenInit(void)
     ui_lbTime = lv_label_create(ui_MiningScreen);
     lv_obj_set_width(ui_lbTime, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbTime, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbTime, scale_x(-190));
-    lv_obj_set_y(ui_lbTime, scale_y(0));
+    lv_obj_set_x(ui_lbTime, -190);
+    lv_obj_set_y(ui_lbTime, 0);
     lv_obj_set_align(ui_lbTime, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(ui_lbTime, "0d 0h 0m");
     lv_obj_set_style_text_color(ui_lbTime, lv_color_hex(0xDEEE00), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -358,8 +581,8 @@ void UI::miningScreenInit(void)
     ui_lbIP = lv_label_create(ui_MiningScreen);
     lv_obj_set_width(ui_lbIP, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbIP, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbIP, scale_x(-16));
-    lv_obj_set_y(ui_lbIP, scale_y(-77));
+    lv_obj_set_x(ui_lbIP, -16);
+    lv_obj_set_y(ui_lbIP, -77);
     lv_obj_set_align(ui_lbIP, LV_ALIGN_CENTER);
     lv_label_set_text(ui_lbIP, "0.0.0.0");
     lv_obj_set_style_text_color(ui_lbIP, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -370,56 +593,32 @@ void UI::miningScreenInit(void)
     ui_lbBestDifficulty = lv_label_create(ui_MiningScreen);
     lv_obj_set_width(ui_lbBestDifficulty, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbBestDifficulty, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbBestDifficulty, scale_x(34));
-    lv_obj_set_y(ui_lbBestDifficulty, scale_y(
-#ifdef NERDQAXEPLUS2BIGSCREEN
-        23
-#else
-        21
-#endif
-    ));
+    lv_obj_set_x(ui_lbBestDifficulty, 34);
+    lv_obj_set_y(ui_lbBestDifficulty, 21);
     lv_obj_set_align(ui_lbBestDifficulty, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lbBestDifficulty, "0M");
     lv_obj_set_style_text_color(ui_lbBestDifficulty, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_lbBestDifficulty, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_align(ui_lbBestDifficulty, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_lbBestDifficulty,
-#ifdef NERDQAXEPLUS2BIGSCREEN
-                               &ui_font_OpenSansBold24,
-#else
-                               &ui_font_OpenSansBold14,
-#endif
-                               LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_lbBestDifficulty, &ui_font_OpenSansBold14, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_lbHashrate = lv_label_create(ui_MiningScreen);
     lv_obj_set_width(ui_lbHashrate, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbHashrate, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbHashrate, scale_x(-208));
-    lv_obj_set_y(ui_lbHashrate, scale_y(
-#ifdef NERDQAXEPLUS2BIGSCREEN
-        62
-#else
-        59
-#endif
-    ));
+    lv_obj_set_x(ui_lbHashrate, -208);
+    lv_obj_set_y(ui_lbHashrate, 59);
     lv_obj_set_align(ui_lbHashrate, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(ui_lbHashrate, "0,0");
     lv_obj_set_style_text_color(ui_lbHashrate, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_lbHashrate, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_align(ui_lbHashrate, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_lbHashrate,
-#ifdef NERDQAXEPLUS2BIGSCREEN
-                               &ui_font_DigitalNumbers40,
-#else
-                               &ui_font_DigitalNumbers28,
-#endif
-                               LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_lbHashrate, &ui_font_DigitalNumbers28, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_lbRPM = lv_label_create(ui_MiningScreen);
     lv_obj_set_width(ui_lbRPM, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbRPM, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbRPM, scale_x(20));
-    lv_obj_set_y(ui_lbRPM, scale_y(-9));
+    lv_obj_set_x(ui_lbRPM, 20);
+    lv_obj_set_y(ui_lbRPM, -9);
     lv_obj_set_align(ui_lbRPM, LV_ALIGN_CENTER);
     lv_label_set_text(ui_lbRPM, "0");
     lv_obj_set_style_text_color(ui_lbRPM, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -430,8 +629,8 @@ void UI::miningScreenInit(void)
     ui_lbASIC = lv_label_create(ui_MiningScreen);
     lv_obj_set_width(ui_lbASIC, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbASIC, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbASIC, scale_x(111));
-    lv_obj_set_y(ui_lbASIC, scale_y(-66));
+    lv_obj_set_x(ui_lbASIC, 111);
+    lv_obj_set_y(ui_lbASIC, -66);
     lv_obj_set_align(ui_lbASIC, LV_ALIGN_CENTER);
     lv_label_set_text(ui_lbASIC, m_board->getAsicModel());
     lv_obj_set_style_text_color(ui_lbASIC, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -446,8 +645,8 @@ void UI::miningScreenInit(void)
     lv_obj_set_width(ui_imgNet, 14);
     lv_obj_set_height(ui_imgNet, 14);
 
-    lv_obj_set_x(ui_imgNet, scale_x(41+7));
-    lv_obj_set_y(ui_imgNet, scale_y(-83+7));
+    lv_obj_set_x(ui_imgNet, 41+7);
+    lv_obj_set_y(ui_imgNet, -83+7);
     lv_obj_set_align(ui_imgNet, LV_ALIGN_CENTER);
 
     lv_obj_clear_flag(ui_imgNet, LV_OBJ_FLAG_SCROLLABLE);
@@ -455,6 +654,11 @@ void UI::miningScreenInit(void)
     // lv_obj_add_event_cb(ui_MiningScreen, ui_event_MiningScreen, LV_EVENT_ALL, NULL);
 
     addMiningScreenOverlays();
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    applyBigScreenMiningLayout();
+    // v1.1.0 adds a live network icon that was absent in the reference port.
+    lv_obj_align(ui_imgNet, LV_ALIGN_TOP_RIGHT, -8, 36);
+#endif
 }
 
 void UI::settingsScreenInit(void)
@@ -473,8 +677,8 @@ void UI::settingsScreenInit(void)
     ui_lbIPSet = lv_label_create(ui_SettingsScreen);
     lv_obj_set_width(ui_lbIPSet, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbIPSet, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbIPSet, scale_x(-16));
-    lv_obj_set_y(ui_lbIPSet, scale_y(-77));
+    lv_obj_set_x(ui_lbIPSet, -16);
+    lv_obj_set_y(ui_lbIPSet, -77);
     lv_obj_set_align(ui_lbIPSet, LV_ALIGN_CENTER);
     lv_label_set_text(ui_lbIPSet, "--");
     lv_obj_set_style_text_color(ui_lbIPSet, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -485,8 +689,8 @@ void UI::settingsScreenInit(void)
     ui_lbBestDifficultySet = lv_label_create(ui_SettingsScreen);
     lv_obj_set_width(ui_lbBestDifficultySet, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbBestDifficultySet, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbBestDifficultySet, scale_x(34));
-    lv_obj_set_y(ui_lbBestDifficultySet, scale_y(21));
+    lv_obj_set_x(ui_lbBestDifficultySet, 34);
+    lv_obj_set_y(ui_lbBestDifficultySet, 21);
     lv_obj_set_align(ui_lbBestDifficultySet, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lbBestDifficultySet, "--");
     lv_obj_set_style_text_color(ui_lbBestDifficultySet, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -497,8 +701,8 @@ void UI::settingsScreenInit(void)
     ui_lbPoolNr = lv_label_create(ui_SettingsScreen);
     lv_obj_set_width(ui_lbPoolNr, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbPoolNr, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbPoolNr, scale_x(210));
-    lv_obj_set_y(ui_lbPoolNr, scale_y(-46));
+    lv_obj_set_x(ui_lbPoolNr, 210);
+    lv_obj_set_y(ui_lbPoolNr, -46);
     lv_obj_set_align(ui_lbPoolNr, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lbPoolNr, "");
     lv_obj_set_style_text_color(ui_lbPoolNr, lv_color_hex(0xffffff), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -509,8 +713,8 @@ void UI::settingsScreenInit(void)
     ui_lbVcoreSet = lv_label_create(ui_SettingsScreen);
     lv_obj_set_width(ui_lbVcoreSet, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbVcoreSet, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbVcoreSet, scale_x(43));
-    lv_obj_set_y(ui_lbVcoreSet, scale_y(-45));
+    lv_obj_set_x(ui_lbVcoreSet, 43);
+    lv_obj_set_y(ui_lbVcoreSet, -45);
     lv_obj_set_align(ui_lbVcoreSet, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lbVcoreSet, "--");
     lv_obj_set_style_text_color(ui_lbVcoreSet, lv_color_hex(0xDEDADE), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -521,8 +725,8 @@ void UI::settingsScreenInit(void)
     ui_lbFreqSet = lv_label_create(ui_SettingsScreen);
     lv_obj_set_width(ui_lbFreqSet, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbFreqSet, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbFreqSet, scale_x(43));
-    lv_obj_set_y(ui_lbFreqSet, scale_y(-25));
+    lv_obj_set_x(ui_lbFreqSet, 43);
+    lv_obj_set_y(ui_lbFreqSet, -25);
     lv_obj_set_align(ui_lbFreqSet, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lbFreqSet, "--");
     lv_obj_set_style_text_color(ui_lbFreqSet, lv_color_hex(0xDEDADE), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -533,8 +737,8 @@ void UI::settingsScreenInit(void)
     ui_lbFanSet = lv_label_create(ui_SettingsScreen);
     lv_obj_set_width(ui_lbFanSet, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbFanSet, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbFanSet, scale_x(43));
-    lv_obj_set_y(ui_lbFanSet, scale_y(-5));
+    lv_obj_set_x(ui_lbFanSet, 43);
+    lv_obj_set_y(ui_lbFanSet, -5);
     lv_obj_set_align(ui_lbFanSet, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lbFanSet, "AUTO");
     lv_obj_set_style_text_color(ui_lbFanSet, lv_color_hex(0xDEDADE), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -545,8 +749,8 @@ void UI::settingsScreenInit(void)
     ui_lbPoolSet = lv_label_create(ui_SettingsScreen);
     lv_obj_set_width(ui_lbPoolSet, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbPoolSet, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbPoolSet, scale_x(169));
-    lv_obj_set_y(ui_lbPoolSet, scale_y(-9));
+    lv_obj_set_x(ui_lbPoolSet, 169);
+    lv_obj_set_y(ui_lbPoolSet, -9);
     lv_obj_set_align(ui_lbPoolSet, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lbPoolSet, "--");
     lv_obj_set_style_text_color(ui_lbPoolSet, lv_color_hex(0xDEDADE), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -557,8 +761,8 @@ void UI::settingsScreenInit(void)
     ui_lbHashrateSet = lv_label_create(ui_SettingsScreen);
     lv_obj_set_width(ui_lbHashrateSet, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbHashrateSet, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbHashrateSet, scale_x(-208));
-    lv_obj_set_y(ui_lbHashrateSet, scale_y(59));
+    lv_obj_set_x(ui_lbHashrateSet, -208);
+    lv_obj_set_y(ui_lbHashrateSet, 59);
     lv_obj_set_align(ui_lbHashrateSet, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(ui_lbHashrateSet, "--");
     lv_obj_set_style_text_color(ui_lbHashrateSet, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -569,8 +773,8 @@ void UI::settingsScreenInit(void)
     ui_lbShares = lv_label_create(ui_SettingsScreen);
     lv_obj_set_width(ui_lbShares, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbShares, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbShares, scale_x(-23));
-    lv_obj_set_y(ui_lbShares, scale_y(58));
+    lv_obj_set_x(ui_lbShares, -23);
+    lv_obj_set_y(ui_lbShares, 58);
     lv_obj_set_align(ui_lbShares, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(ui_lbShares, "0/0");
     lv_obj_set_style_text_color(ui_lbShares, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -581,8 +785,8 @@ void UI::settingsScreenInit(void)
     ui_lbPortSet = lv_label_create(ui_SettingsScreen);
     lv_obj_set_width(ui_lbPortSet, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lbPortSet, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lbPortSet, scale_x(211));
-    lv_obj_set_y(ui_lbPortSet, scale_y(13));
+    lv_obj_set_x(ui_lbPortSet, 211);
+    lv_obj_set_y(ui_lbPortSet, 13);
     lv_obj_set_align(ui_lbPortSet, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lbPortSet, "--");
     lv_obj_set_style_text_color(ui_lbPortSet, lv_color_hex(0xDEDADE), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -590,6 +794,10 @@ void UI::settingsScreenInit(void)
     lv_obj_set_style_text_align(ui_lbPortSet, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_lbPortSet, &ui_font_OpenSansBold13, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_add_event_cb(ui_SettingsScreen, on_screen_loaded, LV_EVENT_SCREEN_LOADED, m_display);
+
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    applyBigScreenSettingsLayout();
+#endif
 }
 
 void UI::logScreenInit(void)
@@ -630,8 +838,8 @@ void UI::bTCScreenInit(void)
     ui_lblBTCPrice = lv_label_create(ui_BTCScreen);
     lv_obj_set_width(ui_lblBTCPrice, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lblBTCPrice, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lblBTCPrice, scale_x(30));
-    lv_obj_set_y(ui_lblBTCPrice, scale_y(47));
+    lv_obj_set_x(ui_lblBTCPrice, 30);
+    lv_obj_set_y(ui_lblBTCPrice, 47);
     lv_obj_set_align(ui_lblBTCPrice, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lblBTCPrice, "0$");
     lv_obj_set_style_text_color(ui_lblBTCPrice, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -641,8 +849,8 @@ void UI::bTCScreenInit(void)
     /*ui_lblPriceInc = lv_label_create(ui_BTCScreen);
     lv_obj_set_width(ui_lblPriceInc, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_lblPriceInc, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_lblPriceInc, scale_x(193));
-    lv_obj_set_y(ui_lblPriceInc, scale_y(49));
+    lv_obj_set_x(ui_lblPriceInc, 193);
+    lv_obj_set_y(ui_lblPriceInc, 49);
     lv_obj_set_align(ui_lblPriceInc, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lblPriceInc, "--");
     lv_obj_set_style_text_color(ui_lblPriceInc, lv_color_hex(0x07FF2A), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -652,8 +860,8 @@ void UI::bTCScreenInit(void)
     ui_lblHashPrice = lv_label_create(ui_BTCScreen);
     lv_obj_set_width(ui_lblHashPrice, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lblHashPrice, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lblHashPrice, scale_x(223));
-    lv_obj_set_y(ui_lblHashPrice, scale_y(-63));
+    lv_obj_set_x(ui_lblHashPrice, 223);
+    lv_obj_set_y(ui_lblHashPrice, -63);
     lv_obj_set_align(ui_lblHashPrice, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lblHashPrice, "500,0");
     lv_obj_set_style_text_color(ui_lblHashPrice, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -664,8 +872,8 @@ void UI::bTCScreenInit(void)
     ui_lblTempPrice = lv_label_create(ui_BTCScreen);
     lv_obj_set_width(ui_lblTempPrice, LV_SIZE_CONTENT);  /// 1
     lv_obj_set_height(ui_lblTempPrice, LV_SIZE_CONTENT); /// 1
-    lv_obj_set_x(ui_lblTempPrice, scale_x(261));
-    lv_obj_set_y(ui_lblTempPrice, scale_y(-18));
+    lv_obj_set_x(ui_lblTempPrice, 261);
+    lv_obj_set_y(ui_lblTempPrice, -18);
     lv_obj_set_align(ui_lblTempPrice, LV_ALIGN_LEFT_MID);
     lv_label_set_text(ui_lblTempPrice, "24");
     lv_obj_set_style_text_color(ui_lblTempPrice, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -673,6 +881,10 @@ void UI::bTCScreenInit(void)
     lv_obj_set_style_text_align(ui_lblTempPrice, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_lblTempPrice, &ui_font_OpenSansBold24, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_add_event_cb(ui_BTCScreen, on_screen_loaded, LV_EVENT_SCREEN_LOADED, m_display);
+
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    applyBigScreenBTCLayout();
+#endif
 }
 
 void UI::globalStatsScreenInit(void)
@@ -691,8 +903,8 @@ void UI::globalStatsScreenInit(void)
     ui_lblHalvingPercent = lv_label_create(ui_GlobalStats);
     lv_obj_set_width(ui_lblHalvingPercent, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_lblHalvingPercent, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_lblHalvingPercent, scale_x(-64));
-    lv_obj_set_y(ui_lblHalvingPercent, scale_y(36));
+    lv_obj_set_x(ui_lblHalvingPercent, -64);
+    lv_obj_set_y(ui_lblHalvingPercent, 36);
     lv_obj_set_align(ui_lblHalvingPercent, LV_ALIGN_CENTER);
     lv_label_set_text(ui_lblHalvingPercent, "95%");
     lv_obj_set_style_text_color(ui_lblHalvingPercent, lv_color_hex(0xC6C6C5), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -703,8 +915,8 @@ void UI::globalStatsScreenInit(void)
     ui_lblBlock = lv_label_create(ui_GlobalStats);
     lv_obj_set_width(ui_lblBlock, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_lblBlock, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_lblBlock, scale_x(-37));
-    lv_obj_set_y(ui_lblBlock, scale_y(67));
+    lv_obj_set_x(ui_lblBlock, -37);
+    lv_obj_set_y(ui_lblBlock, 67);
     lv_obj_set_align(ui_lblBlock, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(ui_lblBlock, "881.557");
     lv_obj_set_style_text_color(ui_lblBlock, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -715,8 +927,8 @@ void UI::globalStatsScreenInit(void)
     ui_lblBlocksToHalving = lv_label_create(ui_GlobalStats);
     lv_obj_set_width(ui_lblBlocksToHalving, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_lblBlocksToHalving, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_lblBlocksToHalving, scale_x(-97));
-    lv_obj_set_y(ui_lblBlocksToHalving, scale_y(68));
+    lv_obj_set_x(ui_lblBlocksToHalving, -97);
+    lv_obj_set_y(ui_lblBlocksToHalving, 68);
     lv_obj_set_align(ui_lblBlocksToHalving, LV_ALIGN_CENTER);
     lv_label_set_text(ui_lblBlocksToHalving, "210.000");
     lv_obj_set_style_text_color(ui_lblBlocksToHalving, lv_color_hex(0xC6C6C5), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -727,8 +939,8 @@ void UI::globalStatsScreenInit(void)
     ui_lblDifficulty = lv_label_create(ui_GlobalStats);
     lv_obj_set_width(ui_lblDifficulty, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_lblDifficulty, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_lblDifficulty, scale_x(-40));
-    lv_obj_set_y(ui_lblDifficulty, scale_y(-11));
+    lv_obj_set_x(ui_lblDifficulty, -40);
+    lv_obj_set_y(ui_lblDifficulty, -11);
     lv_obj_set_align(ui_lblDifficulty, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(ui_lblDifficulty, "81T");
     lv_obj_set_style_text_color(ui_lblDifficulty, lv_color_hex(0xC6C6C5), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -739,8 +951,8 @@ void UI::globalStatsScreenInit(void)
     ui_lblGlobalHash = lv_label_create(ui_GlobalStats);
     lv_obj_set_width(ui_lblGlobalHash, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_lblGlobalHash, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_lblGlobalHash, scale_x(-39));
-    lv_obj_set_y(ui_lblGlobalHash, scale_y(30));
+    lv_obj_set_x(ui_lblGlobalHash, -39);
+    lv_obj_set_y(ui_lblGlobalHash, 30);
     lv_obj_set_align(ui_lblGlobalHash, LV_ALIGN_RIGHT_MID);
     lv_label_set_text(ui_lblGlobalHash, "751,45");
     lv_obj_set_style_text_color(ui_lblGlobalHash, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -751,8 +963,8 @@ void UI::globalStatsScreenInit(void)
     ui_lbllowFee = lv_label_create(ui_GlobalStats);
     lv_obj_set_width(ui_lbllowFee, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_lbllowFee, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_lbllowFee, scale_x(47));
-    lv_obj_set_y(ui_lbllowFee, scale_y(-64));
+    lv_obj_set_x(ui_lbllowFee, 47);
+    lv_obj_set_y(ui_lbllowFee, -64);
     lv_obj_set_align(ui_lbllowFee, LV_ALIGN_CENTER);
     lv_label_set_text(ui_lbllowFee, "2");
     lv_obj_set_style_text_color(ui_lbllowFee, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -763,8 +975,8 @@ void UI::globalStatsScreenInit(void)
     ui_lblmedFee = lv_label_create(ui_GlobalStats);
     lv_obj_set_width(ui_lblmedFee, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_lblmedFee, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_lblmedFee, scale_x(89));
-    lv_obj_set_y(ui_lblmedFee, scale_y(-64));
+    lv_obj_set_x(ui_lblmedFee, 89);
+    lv_obj_set_y(ui_lblmedFee, -64);
     lv_obj_set_align(ui_lblmedFee, LV_ALIGN_CENTER);
     lv_label_set_text(ui_lblmedFee, "200");
     lv_obj_set_style_text_color(ui_lblmedFee, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -775,8 +987,8 @@ void UI::globalStatsScreenInit(void)
     ui_lblhighFee = lv_label_create(ui_GlobalStats);
     lv_obj_set_width(ui_lblhighFee, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_lblhighFee, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_lblhighFee, scale_x(138));
-    lv_obj_set_y(ui_lblhighFee, scale_y(-64));
+    lv_obj_set_x(ui_lblhighFee, 138);
+    lv_obj_set_y(ui_lblhighFee, -64);
     lv_obj_set_align(ui_lblhighFee, LV_ALIGN_CENTER);
     lv_label_set_text(ui_lblhighFee, "1000");
     lv_obj_set_style_text_color(ui_lblhighFee, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -785,6 +997,9 @@ void UI::globalStatsScreenInit(void)
     lv_obj_set_style_text_font(ui_lblhighFee, &ui_font_OpenSansBold13, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_add_event_cb(ui_GlobalStats, on_screen_loaded, LV_EVENT_SCREEN_LOADED, m_display);
 
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    applyBigScreenGlobalStatsLayout();
+#endif
 }
 void UI::createQRScreen(uint8_t *buf, int size) {
     if (!buf || size <= 0) {
@@ -793,7 +1008,11 @@ void UI::createQRScreen(uint8_t *buf, int size) {
     }
 
     const int quiet = 4;
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    const int max_px = 240;
+#else
     const int max_px = 160;
+#endif
     const int n     = size;                          // modules per side
     const int scale = std::max(2, max_px / (n + 2*quiet));
     const int img   = (n + 2*quiet) * scale;         // final pixels per side
@@ -829,7 +1048,11 @@ void UI::createQRScreen(uint8_t *buf, int size) {
         lv_obj_set_style_text_font(label, &ui_font_OpenSansBold14, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, 0);
 
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+        const int screen_w = 480;
+#else
         const int screen_w = 320;
+#endif
         const int label_area_w = screen_w / 2;
 
         lv_obj_set_width(label, label_area_w - 20); // small margin inside left half
@@ -876,6 +1099,10 @@ void UI::powerOffScreenInit(void)
     lv_obj_t *img = lv_img_create(ui_PowerOffScreen);
     lv_img_set_src(img, &ui_img_safe_png);
     lv_obj_align(img, LV_ALIGN_CENTER, 0, 0);  // Center of screen
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    lv_img_set_zoom(img, 384);
+    lv_img_set_antialias(img, true);
+#endif
     lv_obj_add_event_cb(ui_PowerOffScreen, on_screen_loaded, LV_EVENT_SCREEN_LOADED, m_display);
 }
 
@@ -908,8 +1135,8 @@ void UI::showErrorOverlay(const char *error_message, uint32_t error_code)
     lv_obj_t *error_label = lv_label_create(ui_errOverlayContainer);
     lv_obj_set_width(error_label, LV_SIZE_CONTENT);  // Adjust width based on content
     lv_obj_set_height(error_label, LV_SIZE_CONTENT); // Adjust height based on content
-    lv_obj_set_x(error_label, scale_x(0)); // Center horizontally
-    lv_obj_set_y(error_label, scale_y(0)); // Align slightly below the top
+    lv_obj_set_x(error_label, 0); // Center horizontally
+    lv_obj_set_y(error_label, 0); // Align slightly below the top
     lv_obj_set_align(error_label, LV_ALIGN_TOP_MID); // Align top-middle
     lv_label_set_text(error_label, error_message); // Set the error message text
     lv_obj_set_style_text_color(error_label, lv_color_hex(0xe60000), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -922,8 +1149,8 @@ void UI::showErrorOverlay(const char *error_message, uint32_t error_code)
     lv_obj_t *code_label = lv_label_create(ui_errOverlayContainer);
     lv_obj_set_width(code_label, LV_SIZE_CONTENT);  // Adjust width based on content
     lv_obj_set_height(code_label, LV_SIZE_CONTENT); // Adjust height based on content
-    lv_obj_set_x(code_label, scale_x(0)); // Center horizontally
-    lv_obj_set_y(code_label, scale_y(0)); // Align slightly above the bottom
+    lv_obj_set_x(code_label, 0); // Center horizontally
+    lv_obj_set_y(code_label, 0); // Align slightly above the bottom
     lv_obj_set_align(code_label, LV_ALIGN_BOTTOM_MID); // Align bottom-middle
 
     // Format the error code message
@@ -935,6 +1162,16 @@ void UI::showErrorOverlay(const char *error_message, uint32_t error_code)
     //lv_obj_set_style_text_font(code_label, &lv_font_unscii_8, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(code_label, &ui_font_vt323_21, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_align(code_label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    lv_obj_set_size(ui_errOverlayContainer, 420, 126);
+    lv_obj_align(ui_errOverlayContainer, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_width(error_label, 390);
+    lv_label_set_long_mode(error_label, LV_LABEL_LONG_WRAP);
+    lv_obj_set_y(error_label, 6);
+    lv_obj_set_width(code_label, 390);
+    lv_obj_set_y(code_label, -6);
+#endif
 }
 
 void UI::hideErrorOverlay()

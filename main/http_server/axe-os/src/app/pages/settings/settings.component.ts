@@ -114,8 +114,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
       this.includePrereleasesCtrl.valueChanges.pipe(startWith(this.includePrereleasesCtrl.value)),
       this.info$
     ]).pipe(
-      switchMap(([include]) =>
-        this.githubUpdateService.getReleases(include).pipe(
+      switchMap(([include, info]) =>
+        (info.displayProfile === 'bigscreen-480x320'
+          ? this.githubUpdateService.getBigScreenReleases()
+          : this.githubUpdateService.getReleases(include)).pipe(
           map(list =>
             (list ?? []).filter(r =>
               r.assets?.some(a => a.name === this.buildFactoryNameFor(r))
@@ -392,7 +394,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const assetUrl = `https://github.com/harmstorf/ESP-Miner-NerdQAxePlus/releases/download/bigscreen-${this.selectedRelease.tag_name}/${filename}`;
+    const assetUrl = asset.browser_download_url;
 
     this.otpAuth.ensureOtp$(
       "",

@@ -49,9 +49,6 @@ NerdQaxePlus2::NerdQaxePlus2() : NerdQaxePlus() {
 #ifdef NERDQAXEPLUS2
     m_theme = new ThemeNerdqaxeplus2();
 #endif
-#ifdef NERDQAXEPLUS2BIGSCREEN
-    m_theme = new ThemeNerdqaxeplus2bigscreen();
-#endif
     m_asics = new BM1370();
     m_hasHashCounter = true;
     m_vrFrequency = m_defaultVrFrequency = m_asics->getDefaultVrFrequency();

@@ -241,7 +241,7 @@ extern "C" void app_main(void)
 #ifdef NERDQAXEPLUS
     Board *board = new NerdQaxePlus();
 #endif
-#if defined(NERDQAXEPLUS2) || defined(NERDQAXEPLUS2BIGSCREEN)
+#ifdef NERDQAXEPLUS2
     Board *board = new NerdQaxePlus2();
 #endif
 #ifdef NERDOCTAXEPLUS

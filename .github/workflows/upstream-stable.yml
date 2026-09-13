@@ -49,6 +49,9 @@ jobs:
             echo "Merge conflict: hardware adaptation requires review." >&2
             exit 1
           fi
+          echo "$tag" > UPSTREAM_VERSION
+          git add UPSTREAM_VERSION
+          git diff --cached --quiet || git commit -m "ci: set official base to $tag"
           git push origin "HEAD:refs/heads/$candidate"
           gh workflow run bigscreen-build.yml --ref "$candidate"
           echo "Prepared $candidate from official $tag ($upstream_sha). Build dispatched. Hardware test and explicit promotion required; no miner or release was updated." >> "$GITHUB_STEP_SUMMARY"

@@ -91,7 +91,7 @@ SRCS
     "./displays/ui_helpers.cpp"
     "./displays/images/ui_font_DigitalNumbers16.c"
     "./displays/images/ui_font_DigitalNumbers28.c"
-    "./displays/images/ui_font_DigitalNumbers40.c"
+    "./displays/images/ui_font_DigitalNumbers16.c"
     "./displays/images/ui_font_OpenSansBold13.c"
     "./displays/images/ui_font_OpenSansBold14.c"
     "./displays/images/ui_font_OpenSansBold24.c"
@@ -151,6 +151,10 @@ REQUIRES
     "coinbase_decoder"
 
 )
+
+if(NERDQAXE_DISPLAY_PROFILE STREQUAL "YYSLUPING_480X320")
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE DISPLAY_PROFILE_YYSLUPING_480X320)
+endif()
 
 
 set(WEB_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/http_server/axe-os")

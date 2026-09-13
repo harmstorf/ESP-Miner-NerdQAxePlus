@@ -14,7 +14,6 @@ LV_IMG_DECLARE(ui_img_wifi_png);
 #define LV_FONT_CUSTOM_DECLARE
 LV_FONT_DECLARE(ui_font_DigitalNumbers16);
 LV_FONT_DECLARE(ui_font_DigitalNumbers28);
-LV_FONT_DECLARE(ui_font_DigitalNumbers40);
 LV_FONT_DECLARE(ui_font_OpenSansBold13);
 LV_FONT_DECLARE(ui_font_OpenSansBold14);
 LV_FONT_DECLARE(ui_font_OpenSansBold45);
@@ -102,6 +101,15 @@ protected:
 
     void showImageOverlay(const lv_img_dsc_t *img);
     void hideImageOverlay();
+
+#ifdef DISPLAY_PROFILE_YYSLUPING_480X320
+    void applyBigScreenSplashLayout(lv_obj_t *screen, lv_obj_t *image);
+    void applyBigScreenPortalLayout();
+    void applyBigScreenMiningLayout();
+    void applyBigScreenSettingsLayout();
+    void applyBigScreenBTCLayout();
+    void applyBigScreenGlobalStatsLayout();
+#endif
 
     // QR
     void createQRScreen(uint8_t *buf, int size);
