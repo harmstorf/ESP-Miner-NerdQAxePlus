@@ -34,7 +34,7 @@ prepares an upstream-candidate branch and builds it. Conflicts stop the run.
 Nothing automatically flashes a miner or promotes an untested build.
 
 One-click OTA keeps the official version names and changelogs but offers only
-non-prerelease bigscreen-v* releases in harmstorf/ESP-Miner-NerdQAxePlus with
+non-prerelease bigscreen-v<version>-r<N> releases in harmstorf/ESP-Miner-NerdQAxePlus with
 the expected 8,454,144-byte stream. API errors/missing builds never fall back
 to unmodified stock firmware. Standard display builds keep the official route.
 Manual file upload can bypass this selection: never upload an arbitrary stock
@@ -44,7 +44,9 @@ Before promoting a candidate: test cold boot, full-screen orientation/colors,
 Wi-Fi and SPIFFS, all UI screens, actual pool/user configuration, fan/temperature
 telemetry, and OTA through both application slots. Keep a verified serial backup.
 Record the tested commit and artifact SHA-256 in the release notes, then promote
-the tested candidate and publish its exact artifacts under bigscreen-v<version>.
+the tested candidate and publish its exact artifacts under bigscreen-v<version>-r<N>
+(for example bigscreen-v1.1.0-r1). A later fix gets a new revision, never an
+overwrite of existing assets. The UI selects the highest promoted revision.
 Do not rebuild or silently replace artifacts after hardware approval.
 
 The big-screen updater delays boot-slot selection until WWW write/read-back

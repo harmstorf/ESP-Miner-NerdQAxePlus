@@ -140,10 +140,15 @@ export class GithubUpdateService {
       this.getReleases(false),
       this.httpClient.get<GithubRelease[]>(`https://api.github.com/repos/${repo}/releases?per_page=100`)
     ]).pipe(map(([official, patched]) => official.flatMap(release => {
-      const tag = `bigscreen-${release.tag_name}`;
-      const build = patched.find(r => r.tag_name === tag && !r.prerelease);
+      // Revisioned tags are immutable: never replace the earlier scaled-screen
+      // experiment or silently exchange an already tested release artifact.
+      const tagPrefix = `bigscreen-${release.tag_name}-r`;
+      const builds = patched.filter(r => !r.prerelease &&
+        r.tag_name.startsWith(tagPrefix) && /^[1-9][0-9]*$/.test(r.tag_name.slice(tagPrefix.length)));
+      builds.sort((a, b) => Number(b.tag_name.slice(tagPrefix.length)) - Number(a.tag_name.slice(tagPrefix.length)));
+      const build = builds[0];
       const name = `esp-miner-factory-NerdQAxe++-${release.tag_name}.bin`;
-      const prefix = `https://github.com/${repo}/releases/download/${tag}/`;
+      const prefix = `https://github.com/${repo}/releases/download/${build?.tag_name}/`;
       const asset = build?.assets.find(a =>
         a.name === name && a.size === 8454144 && a.browser_download_url.startsWith(prefix));
       return asset ? [{ ...release, assets: [asset] }] : [];
