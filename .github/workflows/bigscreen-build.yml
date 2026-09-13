@@ -9,14 +9,37 @@ permissions:
   contents: read
 
 jobs:
+  standard-build:
+    # Compile without DISPLAY_PROFILE to catch regressions in the stock target.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Build unchanged standard NerdQAxe++ target
+        run: |
+          docker run --rm --user root \
+            -e BOARD=NERDQAXEPLUS2 \
+            -v "$PWD:/home/builder/project" \
+            shufps/esp-idf-builder:0.0.1 \
+            idf.py set-target esp32s3 build
+
   build:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - name: Checkout source and submodules
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           submodules: recursive
           fetch-depth: 0
+
+      - name: Check minimal adaptation scope
+        run: |
+          python3 test/check_bigscreen_scope.py
+          python3 -m unittest discover -s test -p 'test_bigscreen_*.py'
 
       - name: Build 480x320 firmware
         run: |
@@ -71,6 +94,7 @@ jobs:
       - name: Record checksums and sizes
         run: |
           python3 test/verify_bigscreen_artifacts.py --version "$(tr -d '\n' < UPSTREAM_VERSION)" > BUILD_INFO.json
+          git rev-parse HEAD > SOURCE_COMMIT
           cp build/esp-miner.bin esp-miner-NerdQAxe++-BigScreen.bin
           cp build/www.bin www.bin
           sha256sum esp-miner-*.bin www.bin > SHA256SUMS
@@ -86,4 +110,7 @@ jobs:
             www.bin
             SHA256SUMS
             BUILD_INFO.json
+            SOURCE_COMMIT
+            UPSTREAM_COMMIT
+            UPSTREAM_VERSION
           retention-days: 14
