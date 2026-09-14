@@ -1,7 +1,9 @@
 """Check packaging against the actual ESP partition table; never touches a miner."""
 import argparse
 import hashlib
+import gzip
 import json
+import re
 from pathlib import Path
 import struct
 
@@ -11,7 +13,20 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def verify(build, output, version):
+def verify_web_version(app_version, web_dist):
+    versions = set()
+    for path in web_dist.rglob("*.js*"):
+        data = path.read_bytes()
+        if path.suffix == ".gz":
+            data = gzip.decompress(data)
+        versions.update(v.decode() for v in re.findall(
+            rb"""["'](v[0-9]+\.[0-9]+\.[0-9]+(?:\.[0-9]+)?-bigscreen(?:-[0-9a-f]+)?)["']""", data))
+    require(versions == {app_version},
+            f"Firmware/WebUI version mismatch: firmware={app_version}, web={sorted(versions)}")
+    return app_version
+
+
+def verify(build, output, version, web_dist=None):
     app = (build / "esp-miner.bin").read_bytes()
     www = (build / "www.bin").read_bytes()
     boot = (build / "bootloader/bootloader.bin").read_bytes()
@@ -24,6 +39,8 @@ def verify(build, output, version):
     require(struct.unpack_from("<I", app, 32)[0] == 0xABCD5432, "Missing app descriptor")
     app_version = app[48:80].split(b"\0", 1)[0].decode()
     require(app_version.startswith(version + "-bigscreen-"), "Incorrect application version")
+    if web_dist is not None:
+        verify_web_version(app_version, web_dist)
 
     # Validate the ESP image's appended SHA-256 (not a publisher signature).
     require(app[23] == 1, "Application lacks appended SHA-256")
@@ -79,5 +96,8 @@ if __name__ == "__main__":
     parser.add_argument("--build", type=Path, default=Path("build"))
     parser.add_argument("--output", type=Path, default=Path("."))
     parser.add_argument("--version", required=True)
+    parser.add_argument("--web-dist", type=Path)
     args = parser.parse_args()
-    print(json.dumps(verify(args.build, args.output, args.version), indent=2))
+    result = verify(args.build, args.output, args.version, args.web_dist)
+    result["web_version_verified"] = args.web_dist is not None
+    print(json.dumps(result, indent=2))

@@ -47,8 +47,9 @@ jobs:
           BASE_VERSION="$(tr -d '\n' < UPSTREAM_VERSION)"
           [[ "$BASE_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]
           COMMIT_HASH="$(git rev-parse --short=8 HEAD)"
-          echo "${BASE_VERSION}-bigscreen-${COMMIT_HASH}" > version.txt
-          sed -i "s|__VERSION__|${BASE_VERSION}-bigscreen|g; s|__COMMIT__|${COMMIT_HASH}|g" main/http_server/axe-os/src/app/app.module.ts
+          BUILD_VERSION="${BASE_VERSION}-bigscreen-${COMMIT_HASH}"
+          echo "$BUILD_VERSION" > version.txt
+          sed -i "s|__VERSION__|${BUILD_VERSION}|g; s|__COMMIT__|${COMMIT_HASH}|g" main/http_server/axe-os/src/app/app.module.ts
           for file in main/http_server/axe-os/src/assets/i18n/*.json; do
             mv "$file" "${file%.json}.${COMMIT_HASH}.json"
           done
@@ -93,7 +94,7 @@ jobs:
 
       - name: Record checksums and sizes
         run: |
-          python3 test/verify_bigscreen_artifacts.py --version "$(tr -d '\n' < UPSTREAM_VERSION)" > BUILD_INFO.json
+          python3 test/verify_bigscreen_artifacts.py --version "$(tr -d '\n' < UPSTREAM_VERSION)" --web-dist main/http_server/axe-os/dist/axe-os > BUILD_INFO.json
           git rev-parse HEAD > SOURCE_COMMIT
           cp build/esp-miner.bin esp-miner-NerdQAxe++-BigScreen.bin
           cp build/www.bin www.bin

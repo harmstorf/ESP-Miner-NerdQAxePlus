@@ -1,11 +1,12 @@
 """Synthetic valid and deliberately damaged packages exercise the verifier."""
 import hashlib
+import gzip
 from pathlib import Path
 import struct
 import tempfile
 import unittest
 
-from verify_bigscreen_artifacts import verify
+from verify_bigscreen_artifacts import verify, verify_web_version
 
 
 class PackagingTests(unittest.TestCase):
@@ -94,6 +95,21 @@ class PackagingTests(unittest.TestCase):
     def test_wrong_base_version(self):
         with self.assertRaisesRegex(ValueError, "application version"):
             verify(self.build, self.root, "v1.2.0")
+
+    def test_matching_web_version(self):
+        (self.root / "main.js.gz").write_bytes(gzip.compress(b'const v="v1.1.0-bigscreen-12345678";'))
+        self.assertEqual(verify_web_version("v1.1.0-bigscreen-12345678", self.root),
+                         "v1.1.0-bigscreen-12345678")
+
+    def test_reject_original_web_version_bug(self):
+        (self.root / "main.js.gz").write_bytes(gzip.compress(b'const v="v1.1.0-bigscreen";'))
+        with self.assertRaisesRegex(ValueError, "Firmware/WebUI version mismatch"):
+            verify_web_version("v1.1.0-bigscreen-12345678", self.root)
+
+    def test_reject_other_commit(self):
+        (self.root / "main.js.gz").write_bytes(gzip.compress(b'const v="v1.1.0-bigscreen-aaaaaaaa";'))
+        with self.assertRaisesRegex(ValueError, "Firmware/WebUI version mismatch"):
+            verify_web_version("v1.1.0-bigscreen-12345678", self.root)
 
 
 if __name__ == "__main__":
