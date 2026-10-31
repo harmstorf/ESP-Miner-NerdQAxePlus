@@ -1,4 +1,4 @@
-import { HttpClient, HttpEvent, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { eASICModel } from '../models/enum/eASICModel';
@@ -262,8 +262,12 @@ export class SystemService {
     });
   }
 
-  public resetStats(uri: string = '') {
-    return this.httpClient.post(`${uri}/api/system/reset-stats`, null, { responseType: 'text' });
+  /** Reset session stats; with allTime also the persisted all-time stats (needs OTP when enabled). */
+  public resetStats(uri: string = '', allTime: boolean = false, totp?: string) {
+    let headers = new HttpHeaders();
+    if (totp) headers = headers.set('X-TOTP', totp);
+    const query = allTime ? '?allTime=1' : '';
+    return this.httpClient.post(`${uri}/api/system/reset-stats${query}`, null, { headers, responseType: 'text' });
   }
 
   public shutdown(uri: string = '', totp?: string) {
@@ -396,5 +400,14 @@ export class SystemService {
   // only returns enabled flag
   public getOTPStatus(): Observable<{ enabled: boolean }> {
     return this.httpClient.get('/api/v2/otp/status') as Observable<{ enabled: boolean }>;
+  }
+
+  public downloadCoreDump(totp?: string): Observable<HttpResponse<Blob>> {
+    const headers = totp ? new HttpHeaders({ 'X-TOTP': totp }) : undefined;
+    return this.httpClient.get('/api/system/coredump', {
+      headers,
+      observe: 'response',
+      responseType: 'blob',
+    });
   }
 }

@@ -37,6 +37,11 @@ StratumTaskV2::StratumTaskV2(StratumManager *manager, int index)
 {
     memset(&m_sv2_conn, 0, sizeof(m_sv2_conn));
     m_channelType = SV2_CHANNEL_EXTENDED; // default
+
+    m_recvBuf = (uint8_t *) MALLOC(SV2_MAX_RECV_SIZE);
+    if (!m_recvBuf) {
+        ESP_LOGE(TAG, "Failed to allocate %d byte SV2 receive buffer", SV2_MAX_RECV_SIZE);
+    }
 }
 
 StratumTransport *StratumTaskV2::selectTransport()
@@ -121,10 +126,16 @@ void StratumTaskV2::protocolLoop()
     memset(&m_sv2_conn, 0, sizeof(m_sv2_conn));
     m_sv2_conn.channel_type = m_channelType;
     m_lastSubmitTimeUs = 0;
+    m_setupFailed = false;
 
     // Set default version mask for version rolling
     // (SV2 uses the same version mask concept as V1)
     // create_job_set_version_mask(m_index, 0x1fffe000);
+
+    if (!m_recvBuf) {
+        ESP_LOGE(m_tag, "No SV2 receive buffer, cannot run protocol loop");
+        return;
+    }
 
     ESP_LOGI(m_tag, "SV2 protocol loop starting (channel=%s)",
              m_channelType == SV2_CHANNEL_EXTENDED ? "extended" : "standard");
@@ -164,7 +175,7 @@ void StratumTaskV2::protocolLoop()
         }
 
         if (sv2_noise_recv(noise, transport, m_hdrBuf, m_recvBuf,
-                           sizeof(m_recvBuf), &payload_len) != 0) {
+                           SV2_MAX_RECV_SIZE, &payload_len) != 0) {
             ESP_LOGE(m_tag, "Failed to receive SV2 frame, reconnecting...");
             return;
         }
@@ -206,6 +217,11 @@ void StratumTaskV2::protocolLoop()
                      hdr.msg_type, (unsigned long)hdr.msg_length);
             break;
         }
+
+        // a handler found the connection unusable (e.g. pool forbids version rolling)
+        if (m_setupFailed) {
+            return;
+        }
     }
 }
 
@@ -218,7 +234,12 @@ bool StratumTaskV2::sendSetupConnection()
     Board *board = SYSTEM_MODULE.getBoard();
     const char *device_model = board ? board->getDeviceModel() : "";
     const char *asic_model = board ? board->getAsicModel() : "";
-    uint32_t setup_flags = (m_channelType == SV2_CHANNEL_STANDARD) ? 0x01 : 0x00;
+    // The ASICs roll version bits 13-28 on every job (the rolling mask is set
+    // once at chip init, not per job), so the pool must allow version rolling.
+    uint32_t setup_flags = SV2_SETUP_FLAGS_REQUIRES_VERSION_ROLLING;
+    if (m_channelType == SV2_CHANNEL_STANDARD) {
+        setup_flags |= SV2_SETUP_FLAGS_REQUIRES_STANDARD_JOBS;
+    }
 
     ESP_LOGI(m_tag, "Sending SetupConnection (vendor=%s, hw=%s, channel=%s)",
              device_model ? device_model : "",
@@ -253,7 +274,7 @@ bool StratumTaskV2::receiveSetupConnectionSuccess()
     esp_transport_handle_t transport = m_noiseTransport.getTransportHandle();
 
     if (sv2_noise_recv(noise, transport, m_hdrBuf, m_recvBuf,
-                       sizeof(m_recvBuf), &payload_len) != 0) {
+                       SV2_MAX_RECV_SIZE, &payload_len) != 0) {
         ESP_LOGE(m_tag, "Failed to receive SetupConnectionSuccess");
         return false;
     }
@@ -270,6 +291,12 @@ bool StratumTaskV2::receiveSetupConnectionSuccess()
     uint32_t flags;
     if (sv2_parse_setup_connection_success(m_recvBuf, payload_len, &used_version, &flags) != 0) {
         ESP_LOGE(m_tag, "Failed to parse SetupConnectionSuccess");
+        return false;
+    }
+
+    if (flags & SV2_SETUP_SUCCESS_FLAGS_REQUIRES_FIXED_VERSION) {
+        ESP_LOGE(m_tag, "Pool requires a fixed block version, but the ASICs always roll version bits (flags=0x%08lx)",
+                 (unsigned long)flags);
         return false;
     }
 
@@ -317,7 +344,7 @@ bool StratumTaskV2::receiveOpenChannelSuccess()
     esp_transport_handle_t transport = m_noiseTransport.getTransportHandle();
 
     if (sv2_noise_recv(noise, transport, m_hdrBuf, m_recvBuf,
-                       sizeof(m_recvBuf), &payload_len) != 0) {
+                       SV2_MAX_RECV_SIZE, &payload_len) != 0) {
         ESP_LOGE(m_tag, "Failed to receive OpenChannelSuccess");
         return false;
     }
@@ -440,6 +467,17 @@ void StratumTaskV2::handleNewExtendedMiningJob(const uint8_t *payload, uint32_t 
 
     ESP_LOGI(m_tag, "New extended mining job: id=%lu, version=%08lx, merkle_branches=%d",
              (unsigned long)job->job_id, (unsigned long)job->version, job->merkle_path_count);
+
+    // Spec 5.3.16: without version_rolling_allowed the version must be used
+    // as sent. The ASICs roll it regardless, so every share would be invalid.
+    if (!job->version_rolling_allowed) {
+        ESP_LOGE(m_tag, "Dropping extended job %lu: pool does not allow version rolling",
+                 (unsigned long)job->job_id);
+        sv2_ext_job_free(job);
+        // drop the connection like a pool error instead of silently mining nothing
+        m_setupFailed = true;
+        return;
+    }
 
     // Spec 5.3.10: a SetExtranoncePrefix applies to jobs sent AFTER it. Pin the
     // prefix that is in force right now, so a future job parked in the ring

@@ -23,8 +23,8 @@ jobs:
           docker run --rm --user root \
             -e BOARD=NERDQAXEPLUS2 \
             -v "$PWD:/home/builder/project" \
-            shufps/esp-idf-builder:0.0.1 \
-            idf.py set-target esp32s3 build
+            shufps/esp-idf-builder:5.3.6 bash -c \
+            'idf.py set-target esp32s3 build && apt-get update && apt-get install -y openssl && python tools/test_ca_bundle.py --build-dir build'
 
   build:
     runs-on: ubuntu-24.04
@@ -40,6 +40,7 @@ jobs:
         run: |
           python3 test/check_bigscreen_scope.py
           python3 -m unittest discover -s test -p 'test_bigscreen_*.py'
+          python3 tools/test_ca_bundle.py
 
       - name: Build 480x320 firmware
         run: |
@@ -57,8 +58,8 @@ jobs:
             -e BOARD=NERDQAXEPLUS2 \
             -e DISPLAY_PROFILE=YYSLUPING_480X320 \
             -v "$PWD:/home/builder/project" \
-            shufps/esp-idf-builder:0.0.1 \
-            idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.yysluping.defaults" set-target esp32s3 build
+            shufps/esp-idf-builder:5.3.6 bash -c \
+            'idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.yysluping.defaults" set-target esp32s3 build && apt-get update && apt-get install -y openssl && python tools/test_ca_bundle.py --build-dir build'
 
       - name: Verify OTA image fits its 5 MiB slot
         run: |
@@ -69,7 +70,7 @@ jobs:
           BASE_VERSION="$(tr -d '\n' < UPSTREAM_VERSION)"
           docker run --rm --user root \
             -v "$PWD:/home/builder/project" \
-            shufps/esp-idf-builder:0.0.1 \
+            shufps/esp-idf-builder:5.3.6 \
             esptool.py --chip esp32s3 merge_bin \
             --flash_mode dio --flash_size 32MB --flash_freq 80m \
             0x0 build/bootloader/bootloader.bin \
@@ -83,7 +84,7 @@ jobs:
           # 64 KiB header, 5 MiB padded application slot, then 3 MiB web UI.
           docker run --rm --user root \
             -v "$PWD:/home/builder/project" \
-            shufps/esp-idf-builder:0.0.1 \
+            shufps/esp-idf-builder:5.3.6 \
             esptool.py --chip esp32s3 merge_bin \
             --flash_mode dio --flash_size 32MB --flash_freq 80m \
             0x0 build/bootloader/bootloader.bin \
