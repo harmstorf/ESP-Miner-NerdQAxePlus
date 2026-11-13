@@ -21,6 +21,7 @@ allowed = {
     "docs/BIGSCREEN.md", "test/check_bigscreen_scope.py",
     "test/verify_bigscreen_artifacts.py",
     "test/test_bigscreen_artifacts.py",
+    "test/upstream_candidate.py", "test/test_bigscreen_upstream.py",
 }
 allowed.update("components/yysluping_boya_flash/" + name for name in
                ["CMakeLists.txt", "chip_drivers.c", "linker.lf", "spi_flash_chip_boya_32mb.c"])

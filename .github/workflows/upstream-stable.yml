@@ -37,8 +37,29 @@ jobs:
             exit 0
           fi
           candidate="upstream-candidate/$tag"
-          if git ls-remote --exit-code --heads origin "$candidate" >/dev/null; then
-            echo "Candidate $candidate already exists; inspect its build before promotion." >> "$GITHUB_STEP_SUMMARY"
+          # A network failure must not be mistaken for a missing branch.
+          candidate_ref=$(git ls-remote --heads origin "refs/heads/$candidate")
+          if [[ -n "$candidate_ref" ]]; then
+            candidate_sha=$(printf '%s' "$candidate_ref" | cut -f1)
+            runs=$(gh run list --workflow bigscreen-build.yml --branch "$candidate" --limit 100 --json headSha,status,conclusion)
+            decision=$(printf '%s' "$runs" | python3 test/upstream_candidate.py "$candidate_sha")
+            case "$decision" in
+              passed)
+                echo "$candidate has passed both builds; hardware approval remains required." >> "$GITHUB_STEP_SUMMARY"
+                ;;
+              wait)
+                echo "$candidate build is queued or running." >> "$GITHUB_STEP_SUMMARY"
+                ;;
+              retry)
+                gh workflow run bigscreen-build.yml --ref "$candidate"
+                echo "Dispatched missing/failed build for $candidate (bounded automatic retry)." >> "$GITHUB_STEP_SUMMARY"
+                ;;
+              blocked)
+                echo "Candidate $candidate failed three builds. Manual review required; not treating branch existence as success." >&2
+                exit 1
+                ;;
+              *) exit 1 ;;
+            esac
             exit 0
           fi
           git config user.name 'github-actions[bot]'

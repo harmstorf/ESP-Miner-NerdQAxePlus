@@ -33,6 +33,16 @@ Every six hours GitHub Actions checks for a new official stable release. It
 prepares an upstream-candidate branch and builds it. Conflicts stop the run.
 Nothing automatically flashes a miner or promotes an untested build.
 
+The `bigscreen` branch is the maintained integration base, NOT a hardware-tested
+release. Reviewed merge/build fixes must be integrated there after both CI builds
+pass; leaving them only on a candidate causes later releases to repeat old conflicts.
+The hardware approval gate applies to release publication/OTA eligibility.
+An existing candidate counts as build-verified only when its exact commit has a
+successful build run. Pending builds are not duplicated; missing/failed builds
+are retried, up to three failed runs per commit before manual review is required.
+Genuine future source conflicts still stop safely; they are never auto-resolved
+by discarding upstream or display changes.
+
 One-click OTA keeps the official version names and changelogs but offers only
 non-prerelease bigscreen-v<version>-r<N> releases in harmstorf/ESP-Miner-NerdQAxePlus with
 the expected 8,454,144-byte stream. API errors/missing builds never fall back
